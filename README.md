@@ -1,157 +1,50 @@
-# Reproducibleresearchcourseproject
-# Analyzing FitBit Data
-Daniel Maurath  
-July, 2014  
-###About
-This was the first project for the **Reproducible Research** course in Coursera's Data Science specialization track. The purpose of the project was to answer a series of questions using data collected from a [FitBit](http://en.wikipedia.org/wiki/Fitbit).
+Reproducible-research-project-1
+===============================
 
+The goal of this assignment is to analyze a set of data and document it so that it is reproducible by others. After all, if others can't replicate it, it is not science. The components of this repo are as follows:  
 
-##Synopsis
-The purpose of this project was to practice:
+* A R markdown file of the data analysis. (analysis_doc.rmd)  
+* The data itself. (steps_data.csv)  
+* A html file corresponding to the rmd file.  (analysis_doc.html)  
+* Plots in the document.  
 
-* loading and preprocessing data
-* imputing missing values
-* interpreting data to answer research questions
+[HTML file](http://htmlpreview.github.io/?https://github.com/FyzHsn/Reproducible-research-project-1/blob/master/analysis_doc.html) corresponding to the analysis_doc.rmd file.
 
-## Data
-The data for this assignment was downloaded from the course web
-site:
+Below we give a more detailed breakdown of the various components of the assignment.
+___________
 
-* Dataset: [Activity monitoring data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip) [52K]
+Introduction
+------------
 
-The variables included in this dataset are:
+There is a "quantified self" movement comprised of people who take measurements involving themselves methodically to improve personal health and find patterns in their behaviour. [I myself inadvertently fall into this category due to my many n = 1 experiements with intermittent fasting, cold exposure, extreme endurance, caloric restriction and various exercise and dietary regimens. I was doing data science without even knowing it. Over the years, through all the noise, I have found real gems that have revolutionized my well being.]
 
-* **steps**: Number of steps taking in a 5-minute interval (missing
-    values are coded as `NA`)
+Tools such as Fitbit, Nike Fuelband, Jawbone Up has allowed for the collection of personal movement data. Using this data requires statistical methods and software to process and interpret the data. In this experiment, we will be studying data related to the number of steps taken per day averaged over five minute intervals over the course of two months (October + November of 2012). 
 
-* **date**: The date on which the measurement was taken in YYYY-MM-DD
-    format
+Variables of the activity monitoring data are given by:  
+* steps: number of steps taken in a 5-minute interval (missing values are denoted NA)
+* date: date on which the measurement was taken in yyyy-mm-dd format.
+* interval: identifier for the five minute intervals. 
 
-* **interval**: Identifier for the 5-minute interval in which
-    measurement was taken
+The data is stored in a comma separated CSV file with 17568 rows. 
 
-The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
-
-## Loading and preprocessing the data
-
-Download, unzip and load data into data frame `data`. 
-
-```r
-if(!file.exists("getdata-projectfiles-UCI HAR Dataset.zip")) {
-        temp <- tempfile()
-        download.file("http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip",temp)
-        unzip(temp)
-        unlink(temp)
-}
-
-data <- read.csv("activity.csv")
-```
-
-
-## What is mean total number of steps taken per day?
-Sum steps by day, create Histogram, and calculate mean and median.
-
-```r
-steps_by_day <- aggregate(steps ~ date, data, sum)
-hist(steps_by_day$steps, main = paste("Total Steps Each Day"), col="blue", xlab="Number of Steps")
-```
-
-![plot of chunk unnamed-chunk-2](./Reproducible_Research_Project_1_Steps_files/figure-html/unnamed-chunk-2.png) 
-
-```r
-rmean <- mean(steps_by_day$steps)
-rmedian <- median(steps_by_day$steps)
-```
-
-The `mean` is 1.0766 &times; 10<sup>4</sup> and the `median` is 10765.
-
-## What is the average daily activity pattern?
-
-* Calculate average steps for each interval for all days. 
-* Plot the Average Number Steps per Day by Interval. 
-* Find interval with most average steps. 
-
-```r
-steps_by_interval <- aggregate(steps ~ interval, data, mean)
-
-plot(steps_by_interval$interval,steps_by_interval$steps, type="l", xlab="Interval", ylab="Number of Steps",main="Average Number of Steps per Day by Interval")
-```
-
-![plot of chunk unnamed-chunk-3](./Reproducible_Research_Project_1_Steps_files/figure-html/unnamed-chunk-3.png) 
-
-```r
-max_interval <- steps_by_interval[which.max(steps_by_interval$steps),1]
-```
-
-The 5-minute interval, on average across all the days in the data set, containing the maximum number of steps is 835.
-
-## Impute missing values. Compare imputed to non-imputed data.
-Missing data needed to be imputed. Only a simple imputation approach was required for this assignment. 
-Missing values were imputed by inserting the average for each interval. Thus, if interval 10 was missing on 10-02-2012, the average for that interval for all days (0.1320755), replaced the NA. 
-
-```r
-incomplete <- sum(!complete.cases(data))
-imputed_data <- transform(data, steps = ifelse(is.na(data$steps), steps_by_interval$steps[match(data$interval, steps_by_interval$interval)], data$steps))
-```
-
-Zeroes were imputed for 10-01-2012 because it was the first day and would have been over 9,000 steps higher than the following day, which had only 126 steps. NAs then were assumed to be zeros to fit the rising trend of the data. 
-
-```r
-imputed_data[as.character(imputed_data$date) == "2012-10-01", 1] <- 0
-```
-
-Recount total steps by day and create Histogram. 
-
-```r
-steps_by_day_i <- aggregate(steps ~ date, imputed_data, sum)
-hist(steps_by_day_i$steps, main = paste("Total Steps Each Day"), col="blue", xlab="Number of Steps")
-
-#Create Histogram to show difference. 
-hist(steps_by_day$steps, main = paste("Total Steps Each Day"), col="red", xlab="Number of Steps", add=T)
-legend("topright", c("Imputed", "Non-imputed"), col=c("blue", "red"), lwd=10)
-```
-
-![plot of chunk unnamed-chunk-6](./Reproducible_Research_Project_1_Steps_files/figure-html/unnamed-chunk-6.png) 
-
-Calculate new mean and median for imputed data. 
-
-```r
-rmean.i <- mean(steps_by_day_i$steps)
-rmedian.i <- median(steps_by_day_i$steps)
-```
-
-Calculate difference between imputed and non-imputed data.
-
-```r
-mean_diff <- rmean.i - rmean
-med_diff <- rmedian.i - rmedian
-```
-
-Calculate total difference.
-
-```r
-total_diff <- sum(steps_by_day_i$steps) - sum(steps_by_day$steps)
-```
-* The imputed data mean is 1.059 &times; 10<sup>4</sup>
-* The imputed data median is 1.0766 &times; 10<sup>4</sup>
-* The difference between the non-imputed mean and imputed mean is -176.4949
-* The difference between the non-imputed mean and imputed mean is 1.1887
-* The difference between total number of steps between imputed and non-imputed data is 7.5363 &times; 10<sup>4</sup>. Thus, there were 7.5363 &times; 10<sup>4</sup> more steps in the imputed data.
-
-
-## Are there differences in activity patterns between weekdays and weekends?
-Created a plot to compare and contrast number of steps between the week and weekend. There is a higher peak earlier on weekdays, and more overall activity on weekends.  
-
-```r
-weekdays <- c("Monday", "Tuesday", "Wednesday", "Thursday", 
-              "Friday")
-imputed_data$dow = as.factor(ifelse(is.element(weekdays(as.Date(imputed_data$date)),weekdays), "Weekday", "Weekend"))
-
-steps_by_interval_i <- aggregate(steps ~ interval + dow, imputed_data, mean)
-
-library(lattice)
-
-xyplot(steps_by_interval_i$steps ~ steps_by_interval_i$interval|steps_by_interval_i$dow, main="Average Steps per Day by Interval",xlab="Interval", ylab="Steps",layout=c(1,2), type="l")
-```
-
-![plot of chunk unnamed-chunk-10](./Reproducible_Research_Project_1_Steps_files/figure-html/unnamed-chunk-10.png) 
+Assignment
+----------
+Show the following codes and results:
+* Loading the data and preprocessing.  
+  1. Loading data using read.csv().    
+  2. Processing the data into a format fit for analysis.  
+* What is the mean total number of steps taken per day?  
+  1. (Ignoring NA values) calculate the total number of steps taken per day.  
+  2. Make a histogram of the total number of steps taken per day.  
+  3. Compute the mean and median of the total steps per day.  
+* What is the average daily activity pattern?
+  1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, average across all days (y-axis).  
+  2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?  
+* Imputing missing values. Presence of NA days may introduce bias into some calculations or summaries of the data.  
+  1. Calculate and report the total number of mising values in the data set (total number of rows in NA).  
+  2. Devise a strategy for filling in all of the missing values in the data set. Example, the mean or median for the day could be used or the mean for the five minute interval.  
+  3. Create a new dataset that is equal to the original dataset with the missing NA values filled in.  
+  4. Make a histogram of the total number of steps taken each day, Calculate and report the median and mean total number of steps per day. How do these values compare to the cases where NA values were simply ignored? What is the impact of imputing missing data on the estimates of the total daily number of steps taken?  
+* Are there differences in activity patterns between weekdays and weekends? weekdays() function might be useful for this part. Use the data set with the filled in missing values.  
+  1. Create a new factor variable in the dataset with the two levels - "weekdays" and "weekend".  
+  2. Make a panel plot containing the time series plot (i.e. type = "l") of the five-minute interval and the average number of steps taken averaged across all weeday days and weekend days (y-axis).  
